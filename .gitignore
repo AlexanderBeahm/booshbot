@@ -133,3 +133,6 @@ dmypy.json
 
 # Python Env
 booshbot/
+
+# Config file
+bot.config
