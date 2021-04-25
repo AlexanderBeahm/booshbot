@@ -1,3 +1,4 @@
+from igdb_api import covers_get, games_search
 import discord
 import logging
 import os
@@ -5,7 +6,7 @@ import requests
 import time
 
 from igdb.wrapper import IGDBWrapper
-from igdb.igdbapi_pb2 import GameResult
+from discord import Embed
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -27,29 +28,26 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    if message.content.startswith('$hello'):
-        await message.channel.send('Hello!')
-    if message.content.startswith('$shutdown'):
-        await message.channel.send('Shutting down...')
-        await client.close()
-    if message.content.startswith('$gamers'):
+    
+    # if message.content.startswith('$hello'):
+    #     await message.channel.send('Hello!')
+    # if message.content.startswith('$shutdown'):
+    #     await message.channel.send('Shutting down...')
+    #     await client.close()
+    if message.content.startswith('$g'):
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
-        # JSON API request
-        byte_array = igdb_wrapper.api_request(
-            'games',
-            'fields id, name; offset 0; where platforms=48;'
-          )
-        # parse into JSON however you like...
 
-        # Protobuf API request
-        byte_array = igdb_wrapper.api_request(
-            'games.pb', # Note the '.pb' suffix at the endpoint
-            'fields id, name; offset 0; where platforms=48;'
-          )
-        games_message = GameResult()
-        games_message.ParseFromString(byte_array) # Fills the protobuf message object with the response
-        await message.channel.send(games_message)
+        request = str.split(message.content,'$g')[1].strip()
+        game_json_object = games_search(igdb_wrapper, request)
+        game_cover = "//www.pngrepo.com/download/236434/game-controller-gamepad.png"
+        if game_json_object["cover"] is not None:
+            game_cover = covers_get(igdb_wrapper, game_json_object["cover"])[0]["url"]
+
+        embedVar = discord.Embed(title="Game Result", description="Game result search", color=0x00ff00)
+        embedVar.add_field(name="Title", value=game_json_object["name"], inline=False)
+        embedVar.set_thumbnail(url="https:{}".format(game_cover))
+        await message.channel.send(embed=embedVar)
 
     
 def refresh_token(client_id, client_secret):
