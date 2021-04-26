@@ -1,4 +1,4 @@
-from igdb_api import covers_get, games_search
+from igdb_api import covers_get, games_search, genres_get, platforms_get
 import discord
 import logging
 import os
@@ -40,14 +40,42 @@ async def on_message(message):
 
         request = str.split(message.content,'$g')[1].strip()
         game_json_object = games_search(igdb_wrapper, request)
-        game_cover = "//www.pngrepo.com/download/236434/game-controller-gamepad.png"
-        if game_json_object["cover"] is not None:
-            game_cover = covers_get(igdb_wrapper, game_json_object["cover"])[0]["url"]
+        if game_json_object is None:
+            embedVar = discord.Embed(title="Game Result", description="{} searched for '{}'".format(message.author, request), color=0xFF0000)
+            embedVar.add_field(name="Error", value="No results found.", inline=False)
+            await message.channel.send(embed=embedVar)
+        else:
+            game_cover = "//www.pngrepo.com/download/236434/game-controller-gamepad.png"
+            genres = None
+            platforms = None
+            if "cover" in game_json_object and game_json_object["cover"] is not None:
+                game_cover = covers_get(igdb_wrapper, game_json_object["cover"])[0]["url"]
 
-        embedVar = discord.Embed(title="Game Result", description="Game result search", color=0x00ff00)
-        embedVar.add_field(name="Title", value=game_json_object["name"], inline=False)
-        embedVar.set_thumbnail(url="https:{}".format(game_cover))
-        await message.channel.send(embed=embedVar)
+            if "genres" in game_json_object and game_json_object["genres"] is not None:
+                genres = genres_get(igdb_wrapper, game_json_object["genres"])
+
+            if "platforms" in game_json_object and game_json_object["platforms"] is not None:
+                platforms = platforms_get(igdb_wrapper, game_json_object["platforms"])
+
+            #format genres into a (hyperlink)[url] pattern seprated by commas
+            formatted_genres = None
+            formatted_platforms = None
+            if genres is not None:
+                formatted_genres = format_hyperlinks(genres)
+            if platforms is not None:
+                formatted_platforms = format_hyperlinks(platforms)
+
+            formatted_name = format_hyperlinks([game_json_object])
+
+            embedVar = discord.Embed(title="Game Result", description="{} searched for '{}'".format(message.author, request), color=0x00ff00)
+            embedVar.add_field(name="Title", value=formatted_name, inline=False)
+            embedVar.add_field(name="Summary", value=game_json_object["summary"], inline=False)
+            if formatted_platforms is not None:
+                embedVar.add_field(name="Platforms", value=formatted_platforms, inline=False)
+            if formatted_genres is not None:
+                embedVar.add_field(name="Genres", value=formatted_genres, inline=False)
+            embedVar.set_thumbnail(url="https:{}".format(game_cover))
+            await message.channel.send(embed=embedVar)
 
     
 def refresh_token(client_id, client_secret):
@@ -62,6 +90,12 @@ def refresh_token(client_id, client_secret):
         next_twitch_refresh = time.process_time() + expires_in
         twitch_token = access_token
         igdb_wrapper = IGDBWrapper(client_id, twitch_token)
+
+def format_hyperlinks(links):
+    formatted_links = []
+    for link in links:
+        formatted_links.append(str.format('[{}]({})', link["name"], link["url"]))
+    return ', '.join([str(formatted_link) for formatted_link in formatted_links])
 
 def main():
     logger.info(f"Token is: {os.environ['DISCORD_BOT_TOKEN']}")
