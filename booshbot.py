@@ -1,4 +1,4 @@
-from igdb_api import covers_get, games_search, genres_get, platforms_get
+from igdb_api import covers_get_by_id, games_search, genres_get, platforms_get, release_dates_get
 import discord
 import logging
 import os
@@ -48,8 +48,9 @@ async def on_message(message):
             game_cover = "//www.pngrepo.com/download/236434/game-controller-gamepad.png"
             genres = None
             platforms = None
+            release_date='????'
             if "cover" in game_json_object and game_json_object["cover"] is not None:
-                game_cover = covers_get(igdb_wrapper, game_json_object["cover"])[0]["url"]
+                game_cover = covers_get_by_id(igdb_wrapper, game_json_object["cover"])[0]["url"]
 
             if "genres" in game_json_object and game_json_object["genres"] is not None:
                 genres = genres_get(igdb_wrapper, game_json_object["genres"])
@@ -57,9 +58,12 @@ async def on_message(message):
             if "platforms" in game_json_object and game_json_object["platforms"] is not None:
                 platforms = platforms_get(igdb_wrapper, game_json_object["platforms"])
 
+            if "release_dates" in game_json_object and game_json_object["release_dates"] is not None:
+                release_date = release_dates_get(igdb_wrapper, [game_json_object["release_dates"][0]])[0]["y"]
+
             #format genres into a (hyperlink)[url] pattern seprated by commas
-            formatted_genres = None
-            formatted_platforms = None
+            formatted_genres = ''
+            formatted_platforms = ''
             if genres is not None:
                 formatted_genres = format_hyperlinks(genres)
             if platforms is not None:
@@ -67,11 +71,10 @@ async def on_message(message):
 
             formatted_name = format_hyperlinks([game_json_object])
 
-            embedVar = discord.Embed(title="Game Result", description="{} searched for '{}'".format(message.author, request), color=0x00ff00)
-            embedVar.add_field(name="Title", value=formatted_name, inline=False)
-            embedVar.add_field(name="Summary", value=game_json_object["summary"], inline=False)
-            if formatted_platforms is not None:
-                embedVar.add_field(name="Platforms", value=formatted_platforms, inline=False)
+            #create the embed
+            embedVar = discord.Embed(description="**{} ({})** *{}*".format(formatted_name,release_date,formatted_platforms), color=0x00ff00)
+            #embedVar.add_field(name="Title", value=formatted_name, inline=False)
+            embedVar.add_field(name="Summary", value='> {}'.format(game_json_object["summary"]), inline=False)
             if formatted_genres is not None:
                 embedVar.add_field(name="Genres", value=formatted_genres, inline=False)
             embedVar.set_thumbnail(url="https:{}".format(game_cover))
