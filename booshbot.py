@@ -31,7 +31,10 @@ async def on_message(message :discord.Message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('$g') and (len(filtered_users) == 0 or '*' in filtered_users or message.author.name in filtered_users):
+    if message.content.startswith('$h') and is_filtered_user(message.author.name):
+        await message.channel.send("**Available Commands**\n\n$g *<Game Name>*\n> Search for game in IGDB (ex: `$g Among Us`)")
+
+    if message.content.startswith('$g') and is_filtered_user(message.author.name):
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
 
@@ -118,6 +121,9 @@ def format_hyperlinks(links):
     for link in links:
         formatted_links.append(str.format('[{}]({})', link["name"], link["url"]))
     return ', '.join([str(formatted_link) for formatted_link in formatted_links])
+
+def is_filtered_user(name):
+    return len(filtered_users) == 0 or '*' in filtered_users or name in filtered_users
 
 def main():
     logger.info(f"Token is: {os.environ['DISCORD_BOT_TOKEN']}")
