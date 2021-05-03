@@ -30,7 +30,7 @@ async def on_message(message :discord.Message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('$g') and message.author.name == "Booshnaw":
+    if message.content.startswith('$g'):
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
 
