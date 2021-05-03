@@ -25,21 +25,24 @@ async def on_ready():
     logger.info('We have logged in as {0.user}'.format(client))
 
 @client.event
-async def on_message(message):
+async def on_message(message :discord.Message):
+
     if message.author == client.user:
         return
-    
-    # if message.content.startswith('$hello'):
-    #     await message.channel.send('Hello!')
-    # if message.content.startswith('$shutdown'):
-    #     await message.channel.send('Shutting down...')
-    #     await client.close()
-    if message.content.startswith('$g'):
+
+    if message.content.startswith('$g') and message.author.name == "Booshnaw":
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
 
         request = str.split(message.content,'$g')[1].strip()
-        game_json_object = games_search(igdb_wrapper, request)
+        escaped_request = request.translate(str.maketrans({"-":  r"\-",
+                                          "]":  r"\]",
+                                          "\\": r"\\",
+                                          "^":  r"\^",
+                                          "$":  r"\$",
+                                          "*":  r"\*",
+                                          ".":  r"\."}))
+        game_json_object = games_search(igdb_wrapper, escaped_request)
         if game_json_object is None:
             embedVar = discord.Embed(title="Game Result", description="{} searched for '{}'".format(message.author, request), color=0xFF0000)
             embedVar.add_field(name="Error", value="No results found.", inline=False)
@@ -49,6 +52,7 @@ async def on_message(message):
             genres = None
             platforms = None
             release_date='????'
+            summary = ''
             if "cover" in game_json_object and game_json_object["cover"] is not None:
                 game_cover = covers_get_by_id(igdb_wrapper, game_json_object["cover"])[0]["url"]
 
@@ -60,22 +64,34 @@ async def on_message(message):
 
             if "release_dates" in game_json_object and game_json_object["release_dates"] is not None:
                 release_date = release_dates_get(igdb_wrapper, [game_json_object["release_dates"][0]])[0]["y"]
+            
+            if "summary" in game_json_object and game_json_object["summary"] is not None:
+                summary = game_json_object["summary"]
+                
 
             #format genres into a (hyperlink)[url] pattern seprated by commas
             formatted_genres = ''
             formatted_platforms = ''
+            formatted_summary = ''
             if genres is not None:
                 formatted_genres = format_hyperlinks(genres)
             if platforms is not None:
                 formatted_platforms = format_hyperlinks(platforms)
+            if summary is not None and len(summary) >= 1024:
+                formatted_summary = summary[0:1019]
+                formatted_summary = formatted_summary + "..."
+            else:
+                formatted_summary = summary
+
 
             formatted_name = format_hyperlinks([game_json_object])
 
             #create the embed
             embedVar = discord.Embed(description="**{} ({})** *{}*".format(formatted_name,release_date,formatted_platforms), color=0x00ff00)
             #embedVar.add_field(name="Title", value=formatted_name, inline=False)
-            embedVar.add_field(name="Summary", value='> {}'.format(game_json_object["summary"]), inline=False)
-            if formatted_genres is not None:
+            if formatted_summary is not None and formatted_summary != '':
+                embedVar.add_field(name="Summary", value='> {}'.format(formatted_summary), inline=False)
+            if formatted_genres is not None and formatted_genres != '':
                 embedVar.add_field(name="Genres", value=formatted_genres, inline=False)
             embedVar.set_thumbnail(url="https:{}".format(game_cover))
             await message.channel.send(embed=embedVar)
