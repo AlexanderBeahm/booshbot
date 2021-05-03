@@ -19,6 +19,7 @@ client = discord.Client()
 igdb_wrapper = None
 next_twitch_refresh = 0.0
 twitch_token = ''
+filtered_users = os.environ['FILTERED_BOOSHBOT_USERS'].split(',')
 
 @client.event
 async def on_ready():
@@ -30,7 +31,7 @@ async def on_message(message :discord.Message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('$g'):
+    if message.content.startswith('$g') and (len(filtered_users) == 0 or '*' in filtered_users or message.author.name in filtered_users):
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
 
@@ -63,7 +64,9 @@ async def on_message(message :discord.Message):
                 platforms = platforms_get(igdb_wrapper, game_json_object["platforms"])
 
             if "release_dates" in game_json_object and game_json_object["release_dates"] is not None:
-                release_date = release_dates_get(igdb_wrapper, [game_json_object["release_dates"][0]])[0]["y"]
+                release_date_result = release_dates_get(igdb_wrapper, [game_json_object["release_dates"][0]])[0]
+                if "y" in release_date_result: 
+                    release_date = release_date_result["y"]
             
             if "summary" in game_json_object and game_json_object["summary"] is not None:
                 summary = game_json_object["summary"]
