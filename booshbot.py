@@ -31,10 +31,14 @@ async def on_message(message :discord.Message):
     if message.author == client.user:
         return
 
-    if message.content.startswith('$h') and is_filtered_user(message.author.name):
-        await message.channel.send("**Available Commands**\n\n$g *<Game Name>*\n> Search for game in IGDB (ex: `$g Among Us`)")
+    # F
+    if message.content.startswith('$finalmessage') and is_filtered_user(message.author.name):
+        await message.channel.send("https://www.youtube.com/watch?v=DPEvF8l9LDM")
 
-    if message.content.startswith('$g') and is_filtered_user(message.author.name):
+    # G
+    if message.content.startswith('$giantsteps') and is_filtered_user(message.author.name):     
+        await message.channel.send("https://www.youtube.com/watch?v=30FTr6G53VU&ab_channel=Jazzman2696")
+    elif message.content.startswith('$g ') and is_filtered_user(message.author.name):
         '''With a wrapper instance already created'''
         refresh_token(os.environ['TWITCH_CLIENT_ID'], os.environ['TWITCH_CLIENT_SECRET'])
 
@@ -101,6 +105,11 @@ async def on_message(message :discord.Message):
                 embedVar.add_field(name="Genres", value=formatted_genres, inline=False)
             embedVar.set_thumbnail(url="https:{}".format(game_cover))
             await message.channel.send(embed=embedVar)
+
+        # H
+        if message.content.startswith('$h') and is_filtered_user(message.author.name):
+            await message.channel.send("**Available Commands**\n\n$g *<Game Name>*\n> Search for game in IGDB (ex: `$g Among Us`)")
+
 
     
 def refresh_token(client_id, client_secret):
